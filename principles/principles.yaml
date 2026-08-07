@@ -1,0 +1,38 @@
+# Nguyên tắc kiến trúc nội bộ. Mỗi mục có id ổn định để finding neo vào.
+# verify sẽ loại mọi finding viện dẫn principle_id không có trong danh sách này.
+- id: P-SEC-001
+  axis: security
+  text: Container không được chạy bằng root. Khai báo USER không đặc quyền trong Dockerfile.
+  keywords: [dockerfile, user, root, container]
+- id: P-SEC-002
+  axis: security
+  text: Không hardcode secret trong mã nguồn hay file config. Dùng secret store.
+  keywords: [secret, password, token, apikey, credential]
+- id: P-AVL-001
+  axis: availability
+  text: Mỗi service phải có ít nhất một owner giữ role maintainer để nhận alert on-call.
+  keywords: [owner, maintainer, oncall, alert]
+- id: P-AVL-002
+  axis: availability
+  text: Workload production phải có readiness và liveness probe.
+  keywords: [probe, health, readiness, liveness]
+- id: P-AVL-003
+  axis: availability
+  text: Không chạy một replica duy nhất cho service nằm trên đường request chính.
+  keywords: [replica, pdb, availability, single]
+- id: P-SCL-001
+  axis: scalability
+  text: Gọi HTTP ra ngoài phải có timeout tường minh và giới hạn retry.
+  keywords: [timeout, retry, http, client]
+- id: P-SCL-002
+  axis: scalability
+  text: Không dùng chung một database giữa nhiều bounded context.
+  keywords: [database, shared, postgres, coupling]
+- id: P-CST-001
+  axis: cost
+  text: Container phải khai báo resources.requests và resources.limits.
+  keywords: [resources, limits, requests, cpu, memory]
+- id: P-CST-002
+  axis: cost
+  text: Không dùng image tag latest. Phải pin theo digest hoặc version cụ thể.
+  keywords: [image, tag, latest, pin]

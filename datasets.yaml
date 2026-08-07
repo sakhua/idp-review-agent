@@ -1,0 +1,18 @@
+# Đăng ký các bộ dữ liệu benchmark.
+#
+# `path` : thư mục local, dùng cho dataset đi kèm engine (CI chạy offline).
+# `url`  : git repo, dùng cho dataset thật.
+#
+# QUAN TRỌNG: khi bắt đầu đo nghiêm túc, đổi `ref` từ tên branch sang commit SHA.
+# Trỏ vào `main` nghĩa là data đổi dưới chân bạn và số recall tuần này không so
+# sánh được với tuần trước. Mỗi lần chạy eval đều in ra PHIÊN BẢN của data — ghi
+# số đó vào báo cáo cùng với recall.
+
+- name: smoke
+  path: tests/fixtures/smoke-system
+  description: 2 service, 9 lỗi. Đi kèm engine để CI chạy không cần mạng.
+
+- name: payment-system
+  url: https://github.com/<user>/idp-sample-services.git
+  ref: main          # <-- đổi thành commit SHA sau khi push
+  description: 4 service, 15 lỗi. Benchmark chính.

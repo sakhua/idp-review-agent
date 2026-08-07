@@ -1,0 +1,59 @@
+# Ground truth cho dataset smoke. Nhỏ có chủ đích: nó chỉ để CI kiểm tra engine
+# chạy đúng, không phải để đánh giá chất lượng model. Benchmark thật nằm ở repo
+# idp-sample-services.
+case: smoke
+defects:
+  - id: S01
+    axis: security
+    service_key: payment-api
+    title: Container chạy bằng root
+    detectable_by: scanner
+    keywords_any: [[root]]
+  - id: S02
+    axis: security
+    service_key: payment-api
+    title: Mật khẩu DB hardcode trong config
+    detectable_by: scanner
+    keywords_any: [[secret], [password], [hardcode]]
+  - id: S03
+    axis: availability
+    service_key: payment-api
+    title: Chỉ một replica
+    detectable_by: scanner
+    keywords_any: [[replica]]
+  - id: S04
+    axis: availability
+    service_key: payment-api
+    title: Thiếu readiness/liveness probe
+    detectable_by: scanner
+    keywords_any: [[probe]]
+  - id: S05
+    axis: cost
+    service_key: payment-api
+    title: Thiếu resources requests/limits
+    detectable_by: scanner
+    keywords_any: [[resource], [limits]]
+  - id: S06
+    axis: availability
+    service_key: payment-api
+    title: Không có owner giữ role maintainer
+    detectable_by: graph_rule
+    keywords_any: [[maintainer]]
+  - id: S07
+    axis: availability
+    service_key: ledger-api
+    title: Chu trình gọi đồng bộ payment-api và ledger-api
+    detectable_by: graph_rule
+    keywords_any: [["chu trình"], [cycle]]
+  - id: S08
+    axis: scalability
+    service_key: pay.payment-postgres
+    title: Hai service dùng chung một database
+    detectable_by: graph_rule
+    keywords_any: [["dùng chung"], [shared]]
+  - id: S09
+    axis: scalability
+    service_key: payment-api
+    title: Gọi HTTP không có timeout
+    detectable_by: llm
+    keywords_any: [[timeout]]

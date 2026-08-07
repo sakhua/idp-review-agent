@@ -1,0 +1,4 @@
+name: smoke
+description: Dataset tối giản 2 service, đi kèm engine để CI chạy offline
+layout: one-service-per-directory
+ground_truth: .idp-review/expected.yaml

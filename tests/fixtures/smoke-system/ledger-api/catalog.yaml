@@ -1,0 +1,19 @@
+specVersion: vsf-idp.io/v2
+metadata:
+  domain: Payments
+  system: payment
+  namespace: pay
+spec:
+  type: service
+  id: ledger-api
+  name: ledger-api
+  owners:
+    members:
+    - user: lead@corp.tech
+      role: techlead
+    - user: ops@corp.tech
+      role: maintainer
+  topology:
+    - ref: resource:pay/payment-postgres
+    - ref: component:pay/payment-api
+      protocol: REST

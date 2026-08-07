@@ -1,0 +1,11 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-api
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: api
+          image: registry.corp/payment-api:1.4.2

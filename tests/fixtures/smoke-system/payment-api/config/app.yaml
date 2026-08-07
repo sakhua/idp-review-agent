@@ -1,0 +1,4 @@
+server:
+  port: 8080
+database:
+  db_password: Sup3rS3cretP4ss
