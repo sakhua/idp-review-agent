@@ -14,5 +14,5 @@
 
 - name: payment-system
   url: https://github.com/<user>/idp-sample-services.git
-  ref: main          # <-- đổi thành commit SHA sau khi push
+  ref: 70e4184b1d42461e26e366ee027e384de7bcfb89          # <-- đổi thành commit SHA sau khi push
   description: 4 service, 15 lỗi. Benchmark chính.
