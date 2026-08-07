@@ -21,6 +21,11 @@ from pathlib import Path
 
 from langgraph.types import Command
 
+# Windows mặc định dùng cp1252 khi stdout bị pipe hoặc capture, làm print() tiếng
+# Việt ném UnicodeEncodeError. Ép UTF-8 ngay từ đầu để chạy được ở mọi nơi.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -154,13 +159,17 @@ def main() -> None:
     ap.add_argument("--out", default="runs/eval.json")
     args = ap.parse_args()
 
-    if args.url:
-        ds = resolve_url(args.url, args.ref, refresh=args.refresh)
-    else:
-        registry = load_registry(ROOT / "datasets.yaml")
-        if args.dataset not in registry:
-            sys.exit(f"Không có dataset '{args.dataset}'. Có: {', '.join(registry)}")
-        ds = resolve(registry[args.dataset], refresh=args.refresh)
+    try:
+        if args.url:
+            ds = resolve_url(args.url, args.ref, refresh=args.refresh)
+        else:
+            registry = load_registry(ROOT / "datasets.yaml")
+            if args.dataset not in registry:
+                sys.exit(f"Không có dataset '{args.dataset}'. Có: {', '.join(registry)}")
+            ds = resolve(registry[args.dataset], refresh=args.refresh)
+    except (ValueError, FileNotFoundError, RuntimeError) as exc:
+        # Lỗi cấu hình dataset: in gọn thay vì đổ traceback vào mặt người dùng.
+        sys.exit(f"\nKhông nạp được dataset:\n  {exc}\n")
 
     if args.no_llm:
         llm = NullLLM()

@@ -66,16 +66,27 @@ def resolve(spec: dict, refresh: bool = False) -> Dataset:
         return _build(name, root, f"local:{root}", _git_sha(root))
 
     url, ref = spec["url"], spec.get("ref", "HEAD")
+    _check_url(name, url)
     root = _clone_cached(url, ref, refresh=refresh)
     return _build(name, root, f"git:{url}@{ref}", _git_sha(root))
 
 
 def resolve_url(url: str, ref: str = "HEAD", refresh: bool = False) -> Dataset:
+    _check_url("<url>", url)
     root = _clone_cached(url, ref, refresh=refresh)
     return _build(url.rsplit("/", 1)[-1], root, f"git:{url}@{ref}", _git_sha(root))
 
 
 # ── nội bộ ───────────────────────────────────────────────────────────────────
+
+def _check_url(name: str, url: str) -> None:
+    """Bắt placeholder chưa thay trước khi git ném exit 128 khó hiểu."""
+    if "<" in url or ">" in url:
+        raise ValueError(
+            f"dataset '{name}': URL còn placeholder chưa thay -> {url}\n"
+            "  Mở datasets.yaml, thay <user> bằng tài khoản GitHub của bạn,\n"
+            "  và đổi 'ref' thành commit SHA của repo data (git rev-parse HEAD)."
+        )
 
 def _build(name: str, root: Path, source: str, commit: str | None) -> Dataset:
     gt = root / GROUND_TRUTH_REL
@@ -115,7 +126,7 @@ def _clone_cached(url: str, ref: str, refresh: bool = False) -> Path:
             # Fetch nông đúng ref cần — chạy được cả với branch lẫn commit SHA.
             _run(["git", "-C", str(dest), "fetch", "--quiet", "--depth", "1", "origin", ref])
             _run(["git", "-C", str(dest), "checkout", "--quiet", "FETCH_HEAD"])
-        except subprocess.CalledProcessError:
+        except RuntimeError:
             # Server không cho fetch theo SHA -> lấy đủ lịch sử rồi checkout.
             _run(["git", "-C", str(dest), "fetch", "--quiet", "--unshallow"])
             _run(["git", "-C", str(dest), "checkout", "--quiet", ref])
@@ -124,11 +135,16 @@ def _clone_cached(url: str, ref: str, refresh: bool = False) -> Path:
 
 def _git_sha(root: Path) -> str | None:
     try:
-        out = _run(["git", "-C", str(root), "rev-parse", "HEAD"])
-        return out.strip()
+        return _run(["git", "-C", str(root), "rev-parse", "HEAD"]).strip()
     except Exception:      # noqa: BLE001 — thư mục không phải git repo
         return None
 
 
 def _run(cmd: list[str]) -> str:
-    return subprocess.run(cmd, check=True, capture_output=True, text=True).stdout
+    """Bọc git để lộ stderr thật thay vì chỉ 'non-zero exit status 128'."""
+    r = subprocess.run(cmd, capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    if r.returncode != 0:
+        raise RuntimeError(
+            f"lệnh thất bại: {' '.join(cmd)}\n{(r.stderr or r.stdout).strip()}")
+    return r.stdout

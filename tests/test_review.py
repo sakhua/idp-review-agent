@@ -11,6 +11,7 @@ Năm nhóm test, xếp theo giá trị:
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -47,6 +48,21 @@ def test_khong_lay_evidence_ngoai_pham_vi_du_llm_co_xin(run_graph):
 def test_khong_co_quyen_thi_dung_ngay(run_graph):
     _, _, state = run_graph(scope=[], code_readable=[])
     assert "catalog" not in state
+
+
+def test_duong_dan_luon_la_posix():
+    """Chốt chặn lỗi Windows: list_tree trả "k8s\\deploy.yaml" thì mọi luật
+    scanner chứa "k8s/" câm lặng không khớp, và bạn tưởng là model kém."""
+    tree = LocalRepoClient(CASE).list_tree("payment-api", "HEAD")
+    assert not any("\\" in p for p in tree), tree
+    assert "k8s/deploy.yaml" in tree
+
+
+def test_scanner_bat_duoc_luat_dang_thieu(run_graph):
+    """K8S-NO-PROBE và K8S-NO-RESOURCES khớp theo path regex có "k8s/"."""
+    _, _, state = run_graph(code_readable=["payment-api"])
+    rules = {f.rule_id for f in state["findings"] if f.origin == "scanner"}
+    assert {"K8S-NO-PROBE", "K8S-NO-RESOURCES"} <= rules, rules
 
 
 def test_chan_path_traversal():
@@ -104,8 +120,12 @@ def test_luat_do_thi_on_dinh_qua_moi_hash_seed(seed):
         "cat = {k: r.read_catalog(k, 'HEAD') for k in r.scope};"
         "print(sorted(f.id for f in build_graph({'catalog': cat}, None)['raw_findings']))"
     )
+    # PHẢI kế thừa os.environ. Thay sạch env sẽ giết subprocess trên Windows
+    # (thiếu SYSTEMROOT, PATH...) và test fail với stdout rỗng, che mất lỗi thật.
+    env = {**os.environ, "PYTHONHASHSEED": seed, "PYTHONIOENCODING": "utf-8"}
     out = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True,
-                         text=True, env={"PYTHONHASHSEED": seed, "PATH": "/usr/bin:/bin"})
+                         text=True, env=env)
+    assert out.returncode == 0, out.stderr
     assert out.stdout.strip() == (
         "['ARCH-CYCLE-001:ledger-api', 'ARCH-OWNER-001:payment-api', "
         "'ARCH-SHARED-DB-001:pay.payment-postgres']")
@@ -258,7 +278,8 @@ def test_duong_co_so_tat_dinh_dat_muc_mong_doi():
     out = subprocess.run(
         [sys.executable, "benchmark/run_eval.py", "--dataset", "smoke", "--no-llm",
          "--out", "runs/test-eval.json"],
-        cwd=ROOT, capture_output=True, text=True)
+        cwd=ROOT, capture_output=True, text=True, encoding="utf-8",
+        env={**os.environ, "PYTHONIOENCODING": "utf-8"})
     assert out.returncode == 0, out.stderr
     data = json.loads((ROOT / "runs/test-eval.json").read_text(encoding="utf-8"))
     r = data["runs"][0]["breakdown"]

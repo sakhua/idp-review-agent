@@ -59,10 +59,16 @@ class LocalRepoClient:
         out = []
         for p in sorted(base.rglob("*")):
             if p.is_file() and not any(part in SKIP_DIRS for part in p.parts):
-                out.append(str(p.relative_to(base)))
+                # LUÔN trả về đường dẫn POSIX. Trên Windows str(relative_to) cho
+                # "k8s\\deploy.yaml", làm mọi regex chứa "k8s/" câm lặng không khớp.
+                # Git cũng lưu đường dẫn bằng "/" bất kể hệ điều hành.
+                out.append(p.relative_to(base).as_posix())
         return out
 
     def read_file(self, service_key: str, path: str, ref: str) -> dict | None:
+        # Nhận cả "\\" lẫn "/" (LLM có thể trả về dạng nào cũng được) nhưng
+        # đối xử và ghi ra chỉ một dạng, để evidence_id ổn định giữa các OS.
+        path = path.replace("\\", "/")
         target = (self.root / service_key / path).resolve()
         base = (self.root / service_key).resolve()
         # Chặn path traversal: LLM có thể sinh ra "../../etc/passwd".
